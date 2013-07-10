@@ -1,0 +1,78 @@
+<project name="MonitoringCheck" default="dist">
+	<property name="base.proc" value="monitoringCheck" />
+	<property name="base.dir" value="." />
+	<property name="dist.dir" value="dist" />
+	<property name="build.dir" value="bin" />
+	<property name="src.dir" value="src" />
+	<property name="lib.dir" value="lib" />
+	<property name="jar.file" value="${base.proc}.jar" />
+	<property name="dist.file" value="../${base.proc}.tar" />
+	<path id="classpath">
+		<fileset dir="${lib.dir}" includes="*.jar" />
+	</path>
+
+	<target name="gen-manifest" description="Generate CLASSPATH to use in manifest">
+		<pathconvert dirsep='${file.separator}' property="full-lib-dir">
+			<path>
+				<pathelement path="lib" />
+			</path>
+		</pathconvert>
+		<echo>full-lib-dir: ${full-lib-dir}</echo>
+		<pathconvert pathsep=" " dirsep="../" property="manifest-path">
+			<path>
+				<fileset dir="lib" includes="*" />
+			</path>
+			<map from="${full-lib-dir}${file.separator}" to="" />
+		</pathconvert>
+		<echo>manifest-path: ${manifest-path}</echo>
+		<pathconvert pathsep=" " dirsep="../" property="lib-manifest-path">
+			<path>
+				<fileset dir="lib" includes="*" />
+			</path>
+			<map from="${full-lib-dir}${file.separator}" to="../lib/" />
+		</pathconvert>
+		<echo>lib-manifest-path: ${lib-manifest-path}</echo>
+	</target>
+
+	<target name="clean">
+		<delete dir="${dist.dir}" />
+		<delete dir="${build.dir}" />
+		<delete file="${dist.file}" />
+	</target>
+	<target name="compile" depends="clean">
+		<mkdir dir="${build.dir}" />
+		<javac debug="on" deprecation="off" srcdir="${src.dir}" destdir="${build.dir}" includeantruntime="false" classpathref="classpath">
+		</javac>
+	</target>
+	<target name="mkjar" depends="compile, gen-manifest">
+		<mkdir dir="${dist.dir}" />
+		<jar destfile="${dist.dir}/${jar.file}" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="com.igloosec.MonitoringCheck" />
+				<attribute name="Class-Path" value="${lib-manifest-path}" />
+			</manifest>
+		</jar>
+	</target>
+	<target name="dist" depends="mkjar">
+		<copy todir="${dist.dir}">
+			<fileset dir="${base.dir}">
+				<include name="log4j.properties" />
+				<include name="*.sh" />
+			</fileset>
+		</copy>
+		<tar destfile="${dist.file}">
+			<tarfileset dir="${dist.dir}" prefix="${base.proc}" mode="755" username="root" group="system" includes="**/*.sh" />
+			<tarfileset dir="${dist.dir}" prefix="${base.proc}" excludes="**/*.sh" />
+		</tar>
+	</target>
+	
+	<target name="run" depends="dist">
+		<java jar="${dist.dir}/${jar.file}" fork="true">
+			<classpath>
+				<pathelement location="${dist.dir}/${jar.file}" />
+				<pathelement path="${java.class.path}" />
+			</classpath>
+		</java>
+	</target>
+
+</project>
