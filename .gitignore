@@ -12,11 +12,16 @@ tmp/
 *.swp
 *~.nib
 local.properties
+<<<<<<< HEAD
+=======
+
+>>>>>>> 라이브러리 및 클래스패스 파일 추가
 .settings/
 .loadpath
 
 *.class
 .svn/
+dist/
 
 # Package Files #
 *.war
