@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
 import com.igloosec.CacheManager;
 
 /**
@@ -66,8 +65,7 @@ public class CommonQuery {
 	 * @param param
 	 * @return
 	 */
-	public static String makeQuery(String exe_query, String stime,String etime, String table_name, List<String> table_list, String param_str) {
-		JSONObject param = (JSONObject) JSONValue.parse(param_str);
+	public static String makeQuery(String exe_query, String stime,String etime, String table_name, List<String> table_list, JSONObject param) {
 		for(Iterator<String> iter = param.keySet().iterator();iter.hasNext();){
 			String key = iter.next();
 			exe_query = exe_query.replaceFirst("\\$\\{" + key + "\\}", param.get(key) + "");
@@ -76,9 +74,9 @@ public class CommonQuery {
 		exe_query = exe_query.replaceAll("\\s{1,}", " ");
 		String[] query_split = exe_query.split("\\|");
 		String result_query = "";
-		String indexes = "";
+		String index_str = "";
 		
-		String lookup = CommonQuery.getLookupScript(exe_query);
+//		String lookup = CommonQuery.getLookupScript(exe_query);
 		 
 		int insertEventTime = 0;
 		for(String part : query_split){
@@ -86,21 +84,22 @@ public class CommonQuery {
 				part = part.replaceFirst("fulltext", "fulltext2 from=? to=? index from");
 			}
 			else if(part.trim().startsWith("search") && insertEventTime++ == 0){
-				indexes = createIndexDelimiter(part);
+				index_str = createIndexDelimiter(part);
 				
 				part += " and (event_time >= ? and event_time < ?) ";
-				
-				if(!lookup.equals("")){
-					part += " | " + lookup + " ";
-				}
 			}
 			result_query += part + "|";
 		}
 		String tables = CommonUtil.listToString(table_list, "", ",");
 		
-		indexes = indexes.trim().replaceAll("^search\\s", "");
+		index_str = index_str.trim().replaceAll("^search", "").trim();
+		
+		if(index_str.length() == 0){
+			index_str = "\"*\"";
+		}
+		
 		result_query = result_query.replaceAll("\\|$", "");
-		result_query = result_query.replaceFirst("index", indexes);
+		result_query = result_query.replaceFirst("index", index_str);
 
 		result_query = result_query.replaceFirst("\\?", stime.replaceAll("\\s", ""));
 		result_query = result_query.replaceFirst("\\?", etime.replaceAll("\\s", ""));
@@ -204,8 +203,10 @@ public class CommonQuery {
 		filter_str = filter_str.replaceAll("\\sor\\s$", "");
 		
 		String add_index = CommonQuery.createIndexDelimiter(filter_str);
+		String lookup = CommonQuery.getLookupScript(exe_query);
 		
 		result =  "fulltext2 from=? to=? " + indexes + (add_index.length() > 0 ? " and (" + add_index + ")" : "") + " from " + CommonUtil.listToString(table_list, "", ",") +
+				(lookup.length() == 0 ? "" : " | " + lookup) +
 				" | " + search + " and (" + filter_str + ") | fields " + fields;
 		result = result.replaceFirst("\\?", stime.replaceAll("\\s", ""));
 		result = result.replaceFirst("\\?", etime.replaceAll("\\s", ""));

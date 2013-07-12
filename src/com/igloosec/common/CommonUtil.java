@@ -5,6 +5,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -25,19 +27,24 @@ public class CommonUtil {
 		}
 		
 		String[] time = str.split("#");
-		int num = Integer.parseInt(time[0]);
-		if(time[1].equals("S")){
-			result = num;
+		try {
+			int num = Integer.parseInt(time[0]);
+			if(time[1].equals("S")){
+				result = num;
+			}
+			else if(time[1].equals("M")){
+				result = num * 60;		
+			}
+			else if(time[1].equals("H")){
+				result = num * 60 * 60;
+			}
+			else if(time[1].equals("D")){
+				result = num * 60 * 60 * 24;
+			}
+		} catch (NumberFormatException e){
+			result = 0;
 		}
-		else if(time[1].equals("M")){
-			result = num * 60;		
-		}
-		else if(time[1].equals("H")){
-			result = num * 60 * 60;
-		}
-		else if(time[1].equals("D")){
-			result = num * 60 * 60 * 24;
-		}
+		
 		return result;
 	}
 	
@@ -122,5 +129,16 @@ public class CommonUtil {
 		} catch (IOException e) {
 			return false;
 		}
+	}
+	
+	public static long diffOfDate(String begin, String end) throws Exception {
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd");
+		Date beginDate = formatter.parse(begin);
+		Date endDate = formatter.parse(end);
+	
+		long diff = endDate.getTime() - beginDate.getTime();
+		long diffDays = diff / (24 * 60 * 60 * 1000);
+		
+		return diffDays;
 	}
 }

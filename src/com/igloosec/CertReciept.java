@@ -33,7 +33,7 @@ public class CertReciept {
 	 */
 	public boolean checkCertLicence() {
 		/* 침해대응 라이센스 파일 체크 */
-		File filePath = new File(System.getProperty("is.home"), "/conf/extrim/license");
+		File filePath = new File(System.getProperty("is.home"), "/conf/license");
 		
 		if(!filePath.exists()){
 			return false;

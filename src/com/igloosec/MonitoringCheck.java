@@ -31,7 +31,7 @@ import com.igloosec.db.DBHandler;
  *
  */
 public class MonitoringCheck extends Module {
-	List<Map<String, String>> rule_list;
+	Map<String, RuleInfoVO> rule_list;
 	Map<String, TableInfo> tableMap;
 	Map<String, IndexInfo> indexMap;
 	
@@ -106,8 +106,8 @@ public class MonitoringCheck extends Module {
 	protected void excute() throws Exception {
 		Calendar cal = Calendar.getInstance();
 
-		for(Iterator<Map<String, String>> iter = rule_list.iterator();iter.hasNext();){
-			final Map<String, String> rule = iter.next();
+		for(Iterator<String> iter = rule_list.keySet().iterator(); iter.hasNext();){
+			final RuleInfoVO rule = rule_list.get(iter.next());
 			Thread t = new Thread(){
 				public void run(){
 					analysis(rule);
@@ -128,16 +128,40 @@ public class MonitoringCheck extends Module {
 	}
 
 	/**
-	 * 링크되어 있지않은 테이블들을 모두 삭제한다.
+	 * 링크되어 있지않은 테이블, 보관기간이 지난 테이블을 모두 삭제한다.
 	 */
 	private void cleanTable() {
 		String query = "select table_name from user_tables where table_name like upper('is_monitor_%')";
 		String[] data = new DBHandler().getOneColumnData(super.DB_NAME, query);
 		
+		List<String> drop_table_list = new LinkedList<String>();
+		for(String table_name : data){
+			if(!rule_list.containsKey(table_name.split("_")[2])){
+				
+			} else {
+				String today = new SimpleDateFormat("yyyyMMdd").format(Calendar.getInstance().getTime());
+				int store_period = Integer.parseInt(CacheManager.getInstance().getProperties().getProperty("log.store.period", "30"));
+				
+				long diffOfDate = 0L;
+				try {
+					diffOfDate = CommonUtil.diffOfDate(table_name.split("_")[3], today);
+					
+					if(diffOfDate >= store_period){
+						drop_table_list.add("drop table " + table_name);
+					}
+				} catch (Exception e) {
+					logger.error(e.getMessage(), e);
+					continue;
+				}
+			}
+		}
 		
-		
-		
-		
+		if(drop_table_list.size() > 0){
+			new DBHandler().excuteBatch(super.DB_NAME, drop_table_list.toArray(new String[0]));
+			for(String drop_query : drop_table_list){
+				logger.debug(drop_query);
+			}
+		}
 	}
 
 	/**
@@ -149,26 +173,28 @@ public class MonitoringCheck extends Module {
 				"FROM is_user_defined_monitor a JOIN is_user_defined_rule b ON a.rule_id = b.id";
 		String[][] data = new DBHandler().getNColumnData(super.DB_NAME, query);
 		
-		rule_list = Collections.synchronizedList(new LinkedList<Map<String, String>>());
+		rule_list = Collections.synchronizedMap(new LinkedHashMap<String, RuleInfoVO>());
 		for(String[] row : data){
-			Map<String, String> rule = new LinkedHashMap<String, String>();
-			rule.put("monitor_id",	row[0]);
-			rule.put("rule_id",		row[1]);
-			rule.put("category",	row[2]);
-			rule.put("origin_type",	row[3]);
-			rule.put("title",		row[4]);
-			rule.put("description",	row[5]);
-			rule.put("cycle",		row[6]);
-			rule.put("range",		row[7]);
-			rule.put("delay",		row[8]);
-			rule.put("param",		row[9]);
-			rule.put("manager_agent",	row[10]);
-			rule.put("group_name",	row[11]);
-			rule.put("user_id", 	row[12]);
-			rule.put("correlation",	row[13]);
-			rule.put("exe_query",	row[14]);
-			rule.put("idate",	row[15]);
-			rule_list.add(rule);
+			
+			RuleInfoVO rule = new RuleInfoVO();
+			rule.setMonitor_id(Integer.parseInt(row[0]));
+			rule.setRule_id(Integer.parseInt(row[1]));
+			rule.setCategory(row[2]);
+			rule.setOrigin_type(row[3]);
+			rule.setTitle(row[4]);
+			rule.setDescription(row[5]);
+			rule.setCycle(CommonUtil.getTime(row[6]));
+			rule.setRange(CommonUtil.getTime(row[7]));
+			rule.setDelay(CommonUtil.getTime(row[8]));
+			rule.setParam((JSONObject) JSONValue.parse(row[9]));
+			rule.setManager_agent((JSONObject) JSONValue.parse(row[10]));
+			rule.setGroup_name(row[11]);
+			rule.setUser_id(row[12]);
+			rule.setCorrelation(row[13]);
+			rule.setExe_query(row[14]);
+			rule.setIdate(row[15]);
+			
+			rule_list.put(row[0], rule);
 		}
 	}
 
@@ -202,7 +228,7 @@ public class MonitoringCheck extends Module {
 	 * 실제 분석을 수행
 	 * @param row
 	 */
-	public void analysis(Map<String, String> rule) {
+	public void analysis(RuleInfoVO rule) {
 		Calendar startCal = Calendar.getInstance();
 		Calendar endCal = Calendar.getInstance();
 		startCal.set(Calendar.MILLISECOND, 0);
@@ -216,9 +242,9 @@ public class MonitoringCheck extends Module {
 			endCal.set(Calendar.SECOND, endSeconds - (endSeconds % 5));
 		}
 		
-		int cycle = CommonUtil.getTime(rule.get("cycle"));
-		int range = CommonUtil.getTime(rule.get("range"));
-		int delay = CommonUtil.getTime(rule.get("delay"));
+		int cycle = rule.getCycle();
+		int range = rule.getRange();
+		int delay = rule.getDelay();
 		
 		startCal.add(Calendar.SECOND, -delay);
 		endCal.add(Calendar.SECOND, -delay);
@@ -229,16 +255,16 @@ public class MonitoringCheck extends Module {
 		
 		startCal.add(Calendar.SECOND, -range);
 		
-		String monitor_id = rule.get("monitor_id");
-		String title = rule.get("title");
-		String exe_query = rule.get("exe_query");
-		String param = rule.get("param");
-		String origin_type = rule.get("origin_type");
-		String group_name = rule.get("group_name");
-		String user_id = rule.get("user_id");
+		String monitor_id = rule.getMonitor_id() + "";
+		String title = rule.getTitle();
+		String exe_query = rule.getExe_query();
+		JSONObject param = rule.getParam();
+		String origin_type = rule.getOrigin_type();
+		String group_name = rule.getGroup_name();
+		String user_id = rule.getUser_id();
 		String stime = new SimpleDateFormat("yyyyMMdd HHmmss").format(startCal.getTime());
 		String etime = new SimpleDateFormat("yyyyMMdd HHmmss").format(endCal.getTime());
-		JSONObject manager_agent = (JSONObject) JSONValue.parse(rule.get("manager_agent"));
+		JSONObject manager_agent = rule.getManager_agent();
 		List<String> agent_list = (List<String>) manager_agent.get("agent_list");
 		String mgr_ip = (String) manager_agent.get("mgr_ip");
 		
