@@ -67,7 +67,7 @@ public abstract class Module {
 			InetAddress addr = InetAddress.getLocalHost();
 			object = System.getProperty("user.name") + "@" + addr.getHostAddress();
 		} catch (UnknownHostException e) {
-			logger.error(e.getMessage());
+			logger.error(e.getMessage(), e);
 		} 
 		String query = "insert into is_audit_log(lev, subject, object, note, idate) values ('" + level + "', '" + subject + "', '" + object + "', '" + note + "', sysdate)";
 		boolean result = new DBHandler().excuteUpdate(DB_NAME, query);
@@ -101,8 +101,7 @@ public abstract class Module {
 			try {
 				excute();
 			} catch (Exception e) {
-				e.printStackTrace();
-				logger.error(e.getMessage());
+				logger.error(e.getMessage(), e);
 			} finally {
 				if(timer == null){
 					timer = new Timer();

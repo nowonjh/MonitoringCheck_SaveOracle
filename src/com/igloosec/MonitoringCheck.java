@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -52,8 +53,8 @@ public class MonitoringCheck extends Module {
 	
 	@Override
 	protected void init() {
-		tableMap = new LinkedHashMap<String, TableInfo>();
-		indexMap = new LinkedHashMap<String, IndexInfo>();
+		tableMap = Collections.synchronizedMap(new LinkedHashMap<String, TableInfo>());
+		indexMap = Collections.synchronizedMap(new LinkedHashMap<String, IndexInfo>());
 		synchronized (this) {
 			getRuleList();
 			getTableList();
@@ -81,7 +82,7 @@ public class MonitoringCheck extends Module {
 				listTables = client.listTables();
 				listIndexs = client.listIndexes(null);
 			} catch (IOException e) {
-				logger.error(e.getMessage());
+				logger.error(e.getMessage(), e);
 			}
 			
 			for(Iterator<TableInfo> iter = listTables.iterator();iter.hasNext();){
@@ -127,7 +128,7 @@ public class MonitoringCheck extends Module {
 	}
 
 	/**
-	 * 링크되지 않아있는 테이블들을 모두 삭제한다.
+	 * 링크되어 있지않은 테이블들을 모두 삭제한다.
 	 */
 	private void cleanTable() {
 		String query = "select table_name from user_tables where table_name like upper('is_monitor_%')";
@@ -148,7 +149,7 @@ public class MonitoringCheck extends Module {
 				"FROM is_user_defined_monitor a JOIN is_user_defined_rule b ON a.rule_id = b.id";
 		String[][] data = new DBHandler().getNColumnData(super.DB_NAME, query);
 		
-		rule_list = new LinkedList<Map<String, String>>();
+		rule_list = Collections.synchronizedList(new LinkedList<Map<String, String>>());
 		for(String[] row : data){
 			Map<String, String> rule = new LinkedHashMap<String, String>();
 			rule.put("monitor_id",	row[0]);

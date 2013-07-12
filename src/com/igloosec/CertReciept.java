@@ -106,17 +106,17 @@ public class CertReciept {
 			try {
 				real_src = CommonUtil.getRealIP(s_info);
 			} catch (UnknownHostException e) {
-				logger.error(e.getMessage());
+				logger.error(e.getMessage(), e);
 			}
 			try {
 				real_dst = CommonUtil.getRealIP(d_info);
 			} catch (UnknownHostException e) {
-				logger.error(e.getMessage());
+				logger.error(e.getMessage(), e);
 			}
 			try {
 				real_org = CommonUtil.getRealIP(origin);
 			} catch (UnknownHostException e) {
-				logger.error(e.getMessage());
+				logger.error(e.getMessage(), e);
 			}
 			
 			/* RDBMS 를 사용할 경우 */

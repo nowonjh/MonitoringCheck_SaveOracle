@@ -51,7 +51,7 @@ public class DBConnectionManager {
 			db1DataSource.setPoolMaximumActiveConnections(maxActive);
 			db1DataSource.setPoolMaximumIdleConnections(maxIdle);
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error(e.getMessage(), e);
 		}
 	}
 
@@ -81,7 +81,7 @@ public class DBConnectionManager {
 			if(con != null) {
 				try { con.commit(); con.close(); } catch (SQLException e1) { ; }
 			}
-			logger.error(e.getMessage());
+			logger.error(e.getMessage(), e);
 		}
 	}
 	
@@ -119,7 +119,7 @@ public class DBConnectionManager {
 				con = db1DataSource.getConnection();
 			}
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error(e.getMessage(), e);
 		}
 
 		return con;
@@ -136,7 +136,7 @@ public class DBConnectionManager {
 				Class.forName(driverName);
 				con = DriverManager.getConnection(dbURL, userid, passwd);
 			} catch (Exception e) {
-				logger.error(e.getMessage());
+				logger.error(e.getMessage(), e);
 			}
 		}
 		return con;

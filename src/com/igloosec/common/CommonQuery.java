@@ -11,7 +11,10 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import com.igloosec.CacheManager;
 
-
+/**
+ * @author JH
+ *
+ */
 public class CommonQuery {
 	
 	/**
@@ -75,6 +78,8 @@ public class CommonQuery {
 		String result_query = "";
 		String indexes = "";
 		
+		String lookup = CommonQuery.getLookupScript(exe_query);
+		 
 		int insertEventTime = 0;
 		for(String part : query_split){
 			if(part.trim().startsWith("fulltext")){
@@ -84,6 +89,10 @@ public class CommonQuery {
 				indexes = createIndexDelimiter(part);
 				
 				part += " and (event_time >= ? and event_time < ?) ";
+				
+				if(!lookup.equals("")){
+					part += " | " + lookup + " ";
+				}
 			}
 			result_query += part + "|";
 		}
@@ -193,9 +202,7 @@ public class CommonQuery {
 			}
 		}
 		filter_str = filter_str.replaceAll("\\sor\\s$", "");
-//		if(Integer.parseInt(resultFilter.get("total_cnt") + "") > 0 && filter_str.length() > 0){
-//			filter_str += ")";
-//		}
+		
 		String add_index = CommonQuery.createIndexDelimiter(filter_str);
 		
 		result =  "fulltext2 from=? to=? " + indexes + (add_index.length() > 0 ? " and (" + add_index + ")" : "") + " from " + CommonUtil.listToString(table_list, "", ",") +
@@ -203,7 +210,6 @@ public class CommonQuery {
 		result = result.replaceFirst("\\?", stime.replaceAll("\\s", ""));
 		result = result.replaceFirst("\\?", etime.replaceAll("\\s", ""));
 		return result;
-		
 	}
 	
 	public static String createIndexDelimiter(String str) {
@@ -211,7 +217,6 @@ public class CommonQuery {
 		if(str.length() == 0){
 			return str;
 		}
-		
 		Map<String, String> searchMap = new LinkedHashMap<String, String>();
 		
 		String indexes;
@@ -240,29 +245,45 @@ public class CommonQuery {
 			indexes = indexes.replace(in, "(" + trans_in + ")");
 		}
 		
-		pattern = Pattern.compile("\".+?\"");
-		matcher = pattern.matcher(str);
-		while(matcher.find()) {
-			String group = matcher.group();
-			String tmp_group = group;
-			if(group.split(delimiter).length > 0){
-				String tmp_index = "";
-				if(!ip_split && (searchMap.get(group).equals("s_info") || searchMap.get(group).equals("d_info") || searchMap.get(group).equals("terminal") || searchMap.get(group).equals("origin"))){
-					tmp_index = tmp_group;
-				}
-				else {
-					for(String shard : group.split(delimiter)){
-						if(shard.length() > 0){
-							tmp_index += "\"" + shard + "\" and ";
-						}
+		if(searchMap.size() > 0){
+			pattern = Pattern.compile("\".+?\"");
+			matcher = pattern.matcher(str);
+			while(matcher.find()) {
+				String group = matcher.group();
+				String tmp_group = group;
+				if(group.split(delimiter).length > 0){
+					if(searchMap.get(group).equals("ip") || searchMap.get(group).equals("url") || searchMap.get(group).equals("port")){
+						indexes = indexes.replace(tmp_group, "");
+						continue;
 					}
-					tmp_index = tmp_index.replaceAll("\\sand\\s$", "");
-					tmp_index = "(" + tmp_index + ")";
+					
+					String tmp_index = "";
+					if(!ip_split && (searchMap.get(group).equals("s_info") || searchMap.get(group).equals("d_info") || searchMap.get(group).equals("terminal") || searchMap.get(group).equals("origin"))){
+						tmp_index = tmp_group;
+						indexes = indexes.replace(tmp_group, tmp_index);
+					}
+					else {
+						for(String shard : group.split(delimiter)){
+							if(shard.length() > 0){
+								tmp_index += "\"" + shard + "\" and ";
+							}
+						}
+						tmp_index = tmp_index.replaceAll("\\sand\\s$", "");
+						indexes = indexes.replace(tmp_group, "(" + tmp_index + ")");
+					}
 				}
-				indexes = indexes.replace(tmp_group,  tmp_index );
 			}
 		}
 		return indexes;
 	}
 	
+	public static String getLookupScript(String exe_query) {
+		Pattern pattern = Pattern.compile("lookup\\s.+?\\|");
+		Matcher matcher = pattern.matcher(exe_query);
+		String result = "";
+		while(matcher.find()) {
+			result = matcher.group().replaceAll("\\|$", "");
+		}
+		return result;
+	}
 }

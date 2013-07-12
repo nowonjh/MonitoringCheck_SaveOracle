@@ -37,7 +37,7 @@ public class DBHandler {
 				}
 				logger.debug(query);
 			} catch (IOException e) {
-				logger.error(e.getMessage() + " : error query => " + query);
+				logger.error(e.getMessage() + " : error query => " + query, e);
 			} finally {
 				if (cursor != null) {
 					try {
@@ -50,8 +50,7 @@ public class DBHandler {
 			}
 
 		} catch (Exception e) {
-			logger.error("client is close : " + client.isClosed());
-			logger.error(e.getMessage() + " : error query => " + query, e);
+			logger.error(e.getMessage() + " client is close : " + client.isClosed() + " : error query => " + query, e);
 		}
 		return rowSet;
 	}
@@ -84,7 +83,7 @@ public class DBHandler {
 				logger.debug(query);
 
 			} catch (IOException e) {
-				logger.error(e.getMessage() + " : error query => " + query);
+				logger.error(e.getMessage() + " : error query => " + query, e);
 			} finally {
 				if (cursor != null) {
 					try {
@@ -97,7 +96,7 @@ public class DBHandler {
 
 		} catch (Exception e) {
 			// close(con, stmt, rs);
-			 logger.error(e.getMessage() + " : error query => " + query);
+			 logger.error(e.getMessage() + " : error query => " + query, e);
 		}
 
 		logger.debug(rowSet.size());
@@ -145,7 +144,7 @@ public class DBHandler {
 			logger.debug(query);
 		} catch (SQLException e) {
 			close(con, stmt, rs);
-			logger.error(e.getMessage() + " : error query => " + query);
+			logger.error(e.getMessage() + " : error query => " + query, e);
 		}
 
 		String[][] data = new String[rowSet.size()][colCnt];
@@ -183,7 +182,7 @@ public class DBHandler {
 			logger.debug(query);
 		} catch (SQLException e) {
 			close(con, stmt, rs);
-			logger.error(e.getMessage() + " : error query => " + query);
+			logger.error(e.getMessage() + " : error query => " + query, e);
 		}
 
 		String[] data = new String[row.size()];
@@ -210,7 +209,7 @@ public class DBHandler {
 			logger.debug(query);
 		} catch (SQLException e) {
 			close(con, stmt, null);
-			logger.error(e.getMessage() + " : query is " + query);
+			logger.error(e.getMessage() + " : query is " + query, e);
 		}
 		return flag;
 	}
@@ -235,10 +234,10 @@ public class DBHandler {
 			try {
 				con.rollback();
 			} catch (SQLException e1) {
-				logger.error(e.getMessage());
+				logger.error(e.getMessage(), e);
 			}
 			close(con, stmt, null);
-			logger.error(e.getMessage());
+			logger.error(e.getMessage(), e);
 		} finally {
 		}
 
@@ -257,7 +256,7 @@ public class DBHandler {
 				stmt = null;
 			}
 		} catch (Exception e) {
-			logger.error(e.getMessage());
+			logger.error(e.getMessage(), e);
 		}
 
 		DBConnectionManager.getInstance().freeConnection(con);
@@ -278,7 +277,7 @@ public class DBHandler {
 			close(con, stmt, rs);
 		} catch (SQLException e) {
 			close(con, stmt, rs);
-			logger.error(e.getMessage());
+			logger.error(e.getMessage(), e);
 		}
 		return result;
 	}
@@ -366,7 +365,7 @@ public class DBHandler {
 			client.stopQuery(query_id);
 			client.removeQuery(query_id);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
+			logger.error(e.getMessage(), e);
 		}
 	}
 	
@@ -393,7 +392,7 @@ public class DBHandler {
 				try {
 					yyyyMMdd = new SimpleDateFormat("yyyyMMdd").format(new SimpleDateFormat("yyyyMMdd HHmmss").parse(row.get("event_time").toString()));
 				} catch (ParseException e) {
-					logger.error(e.getMessage());
+					logger.error(e.getMessage(), e);
 				}
 				
 				pstmt.setString(1, id + "_" + yyyyMMdd + "_" + row.get("_id"));
@@ -420,10 +419,10 @@ public class DBHandler {
 			try {
 				con.rollback();
 			} catch (SQLException e1) {
-				logger.error(e1.getMessage());
+				logger.error(e1.getMessage(), e);
 			}
 			close(con, pstmt, null);
-			logger.error(e.getMessage());
+			logger.error(e.getMessage(), e);
 		}
 
 		return flag;
@@ -556,20 +555,13 @@ public class DBHandler {
 			try {
 				con.rollback();
 			} catch (SQLException e1) {
-				logger.error(e1.getMessage());
+				logger.error(e1.getMessage(), e);
 			}
 			close(con, pstmt, null);
-			logger.error(e.getMessage());
+			logger.error(e.getMessage(), e);
 		} finally {
 			logger.debug("finally");
 		}
-		
-		
 		logger.debug("make insert query");
-//		boolean result = excuteBatch(db_name, list.toArray(new String[0]));
-//		logger.debug(result);
 	}
-	
-	
-	
 }

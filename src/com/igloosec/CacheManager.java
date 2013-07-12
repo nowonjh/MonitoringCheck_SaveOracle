@@ -50,9 +50,9 @@ public class CacheManager {
 			try {
 				config.load(new FileInputStream(configFile));
 			} catch (FileNotFoundException e) {
-				logger.error(configFile.getAbsolutePath() + " not found..");
+				logger.error(configFile.getAbsolutePath() + " not found..", e);
 			} catch (IOException e) {
-				logger.error(e.getMessage());
+				logger.error(e.getMessage(), e);
 			}
 		}
 		
