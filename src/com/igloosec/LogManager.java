@@ -12,7 +12,7 @@ import org.apache.log4j.PropertyConfigurator;
 
 /**
  *
- * @author wizver
+ * @author JH
  */
 public class LogManager{
 
@@ -26,6 +26,7 @@ public class LogManager{
 	private LogManager() {
 		File dir = new File(System.getProperty("is.home"), "/conf/link.log4j");
 		PropertyConfigurator.configure(dir.getAbsolutePath());
+		PropertyConfigurator.configureAndWatch(dir.getAbsolutePath(), 60000L);
 	}
 
 	public static LogManager getInstance() {

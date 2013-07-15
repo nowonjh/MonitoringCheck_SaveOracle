@@ -18,7 +18,7 @@ import org.araqne.logdb.client.LogQuery;
 import com.igloosec.LogManager;
 
 /**
- * @author wizver
+ * @author JH
  */
 public class DBHandler {
 	Logger logger = LogManager.getInstance().getLogger("monitoringCheck.db");

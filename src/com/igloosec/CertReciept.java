@@ -13,6 +13,12 @@ import org.apache.log4j.Logger;
 import com.igloosec.common.CommonUtil;
 import com.igloosec.db.DBHandler;
 
+/**
+ * 침해 대응 관련 클래스
+ * 
+ * @author JH
+ *
+ */
 public class CertReciept {
 	String DB_NAME;
 	Logger logger;
@@ -156,6 +162,6 @@ public class CertReciept {
 			db.excuteBatch("rdbms", queries.toArray(new String[0]));
 		}
 		
-		logger.debug("[" + title + "] transferCert.");
+		logger.info("[" + title + "] transferCert.");
 	}
 }

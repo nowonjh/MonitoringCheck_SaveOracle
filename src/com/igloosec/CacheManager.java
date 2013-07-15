@@ -10,7 +10,7 @@ import org.apache.log4j.Logger;
 
 /**
  * 
- * @author wizver
+ * @author JH
  *
  */
 public class CacheManager {
@@ -44,7 +44,7 @@ public class CacheManager {
 	
 	public Properties getProperties() {
 		if(configModified != configFile.lastModified()) {
-			logger.debug("extrim.properties file read...");
+			logger.info("extrim.properties file read...");
 			configModified = configFile.lastModified();
 			
 			try {

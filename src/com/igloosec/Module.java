@@ -121,7 +121,7 @@ public abstract class Module {
 		double total = Runtime.getRuntime().totalMemory();
 		double free = Runtime.getRuntime().freeMemory();
 		double usage = total - free;
-		logger.debug("Memory Usage : " + df.format(usage / 1024/1024) + "Mb / " + df.format(total /1024/1024) + "Mb  ( " + df.format(100 - free/total*100.0) + "% )");
+		logger.info("Memory Usage : " + df.format(usage / 1024/1024) + "Mb / " + df.format(total /1024/1024) + "Mb  ( " + df.format(100 - free/total*100.0) + "% )");
 	}
 	
 	/**

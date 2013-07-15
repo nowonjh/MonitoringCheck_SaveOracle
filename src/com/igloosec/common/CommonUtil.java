@@ -16,6 +16,11 @@ import java.util.Vector;
 
 import org.json.simple.JSONObject;
 
+/**
+ * 공통 메소드
+ * @author JH
+ *
+ */
 public class CommonUtil {
 	
 	public static int getTime(String str){

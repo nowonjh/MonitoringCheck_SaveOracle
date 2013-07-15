@@ -47,7 +47,7 @@ public class MonitoringCheck extends Module {
 		cr = new CertReciept(super.DB_NAME, "monitoringCheck.log");
 		certLicence = cr.checkCertLicence();
 		if(certLicence){
-			logger.debug("Cert licence file exist");
+			logger.info("Cert licence file exist");
 		}
 	}
 	
@@ -67,9 +67,7 @@ public class MonitoringCheck extends Module {
 	private void getTableList() {
 		String query = "select mgr_ip from agent_info_list group by mgr_ip";
 		String[] mgr_list = new DBHandler().getOneColumnData(super.DB_NAME, query);
-		
 
-		
 		for(String mgr_ip : mgr_list){
 			LogDbClient client = DBConnectionManager.getInstance().getQueryClient(mgr_ip);
 			if(client == null){
@@ -106,24 +104,26 @@ public class MonitoringCheck extends Module {
 	protected void excute() throws Exception {
 		Calendar cal = Calendar.getInstance();
 
-		for(Iterator<String> iter = rule_list.keySet().iterator(); iter.hasNext();){
-			final RuleInfoVO rule = rule_list.get(iter.next());
-			Thread t = new Thread(){
-				public void run(){
-					analysis(rule);
-				}
-			};
-			t.start();
-		}
 		// 매 1분 마다 모니터링 리스트를 갱신
-		if(cal.get(Calendar.SECOND) < 5){
+		if(cal.get(Calendar.SECOND) == 0){
 			synchronized (rule_list) {
 				getRuleList();
 				getTableList();
 			}
 		}
+		// 한시간에 한번 사용하지 않는 테이블 정리
 		if(cal.get(Calendar.MINUTE) == 0 && cal.get(Calendar.SECOND) == 0){
 			cleanTable();
+		}
+				
+		for(Iterator<String> iter = rule_list.keySet().iterator(); iter.hasNext();){
+			final RuleInfoVO rule = rule_list.get(iter.next());
+			Thread tread = new Thread(){
+				public void run(){
+					analysis(rule);
+				}
+			};
+			tread.start();
 		}
 	}
 
@@ -131,27 +131,26 @@ public class MonitoringCheck extends Module {
 	 * 링크되어 있지않은 테이블, 보관기간이 지난 테이블을 모두 삭제한다.
 	 */
 	private void cleanTable() {
-		String query = "select table_name from user_tables where table_name like upper('is_monitor_%')";
-		String[] data = new DBHandler().getOneColumnData(super.DB_NAME, query);
+		String query = "SELECT tables, Count(tables) FROM (select SubStr(table_name, 0, 13) tables from user_tables where table_name like upper('is_monitor_%')) GROUP BY tables order by count(tables) desc";
+		String[][] data = new DBHandler().getNColumnData(super.DB_NAME, query);
 		
+		int max_store_cnt = Integer.parseInt(CacheManager.getInstance().getProperties().getProperty("max.store.cnt", "30"));
 		List<String> drop_table_list = new LinkedList<String>();
-		for(String table_name : data){
-			if(!rule_list.containsKey(table_name.split("_")[2])){
-				
-			} else {
-				String today = new SimpleDateFormat("yyyyMMdd").format(Calendar.getInstance().getTime());
-				int store_period = Integer.parseInt(CacheManager.getInstance().getProperties().getProperty("log.store.period", "30"));
-				
-				long diffOfDate = 0L;
-				try {
-					diffOfDate = CommonUtil.diffOfDate(table_name.split("_")[3], today);
-					
-					if(diffOfDate >= store_period){
-						drop_table_list.add("drop table " + table_name);
-					}
-				} catch (Exception e) {
-					logger.error(e.getMessage(), e);
-					continue;
+		
+		for(String[] row : data){
+			int drop_tables = Integer.parseInt(row[1]) - max_store_cnt;
+			if(drop_tables >= 1){
+				query = "SELECT table_name FROM (SELECT table_name, ROWNUM rn FROM user_tables WHERE table_name LIKE Upper('" + row[0] + "_%') ORDER BY table_name) WHERE rn <= " + drop_tables;
+				String[] tables = new DBHandler().getOneColumnData(super.DB_NAME, query);
+				for(String table_name : tables){
+					drop_table_list.add("drop table " + table_name);
+				}
+			}
+			else if (!rule_list.containsKey(row[0].split("_")[2])){
+				query = "SELECT table_name, ROWNUM rn FROM user_tables WHERE table_name LIKE Upper('" + row[0] + "_%')";
+				String[] tables = new DBHandler().getOneColumnData(super.DB_NAME, query);
+				for(String table_name : tables){
+					drop_table_list.add("drop table " + table_name);
 				}
 			}
 		}
@@ -159,8 +158,9 @@ public class MonitoringCheck extends Module {
 		if(drop_table_list.size() > 0){
 			new DBHandler().excuteBatch(super.DB_NAME, drop_table_list.toArray(new String[0]));
 			for(String drop_query : drop_table_list){
-				logger.debug(drop_query);
+				logger.info(drop_query);
 			}
+			logger.info("drop tables. count : " + drop_table_list.size());
 		}
 	}
 
@@ -255,23 +255,25 @@ public class MonitoringCheck extends Module {
 		
 		startCal.add(Calendar.SECOND, -range);
 		
-		String monitor_id = rule.getMonitor_id() + "";
-		String title = rule.getTitle();
-		String exe_query = rule.getExe_query();
-		JSONObject param = rule.getParam();
-		String origin_type = rule.getOrigin_type();
-		String group_name = rule.getGroup_name();
-		String user_id = rule.getUser_id();
+		String monitor_id			= rule.getMonitor_id() + "";
+		String title				= rule.getTitle();
+		String exe_query			= rule.getExe_query();
+		String origin_type			= rule.getOrigin_type();
+		String group_name			= rule.getGroup_name();
+		String user_id				= rule.getUser_id();
+		JSONObject param			= rule.getParam();
+		JSONObject manager_agent	= rule.getManager_agent();
+		
 		String stime = new SimpleDateFormat("yyyyMMdd HHmmss").format(startCal.getTime());
 		String etime = new SimpleDateFormat("yyyyMMdd HHmmss").format(endCal.getTime());
-		JSONObject manager_agent = rule.getManager_agent();
+		
 		List<String> agent_list = (List<String>) manager_agent.get("agent_list");
 		String mgr_ip = (String) manager_agent.get("mgr_ip");
 		
 		String table_name = CommonQuery.getTableName(exe_query);
 		List<String> column_list = CommonQuery.getWhereColumn(exe_query);
 		
-		logger.debug("*** [" + title + "] start ***");
+		logger.info("*** [" + title + "] start analysis ***");
 		long rule_stime = System.currentTimeMillis();
 		
 		String query = CommonQuery.getTablesQuery(origin_type, agent_list, group_name, user_id);
@@ -297,7 +299,7 @@ public class MonitoringCheck extends Module {
 		if(exe_query != null){
 			resultData = new DBHandler().getNColumnMapAraqne(super.DB_NAME, mgr_ip, exe_query);
 		}
-		
+		query = null;
 		if(resultData.size() == 0){
 			query = "insert into is_user_defined_monitor_log(id, event_time, event_count, idate) values " +
 					"(" + monitor_id + ", '" + etime + "', 0, sysdate)";
@@ -334,10 +336,12 @@ public class MonitoringCheck extends Module {
 			} catch (ParseException e) {
 				logger.error(e);
 			}
-			new DBHandler().excuteUpdate(super.DB_NAME, query);
-			printMemoryUsage();
-			logger.debug("*** [" + title + "] elapsed time : " + ((System.currentTimeMillis() - rule_stime) / 1000.0) + " ms ***");
 		}
+		if(query != null){
+			new DBHandler().excuteUpdate(super.DB_NAME, query);
+		}
+		printMemoryUsage();
+		logger.info("*** [" + title + "] elapsed time : " + ((System.currentTimeMillis() - rule_stime) / 1000.0) + " ms ***");
 	}
 
 	

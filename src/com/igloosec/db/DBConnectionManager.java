@@ -21,7 +21,7 @@ import com.igloosec.LogManager;
 import com.igloosec.common.CommonUtil;
 
 /**
- * @author wizver
+ * @author JH
  */
 public class DBConnectionManager {
 	Logger logger = LogManager.getInstance().getLogger("monitoringCheck.db");

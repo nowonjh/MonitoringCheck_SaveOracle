@@ -2,6 +2,12 @@ package com.igloosec;
 
 import org.json.simple.JSONObject;
 
+/**
+ * 사용자정의분석 - 모니터링정보의 VO
+ * 
+ * @author JH
+ *
+ */
 public class RuleInfoVO {
 	private int monitor_id;
 	private int rule_id;

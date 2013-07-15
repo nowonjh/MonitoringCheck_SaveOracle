@@ -11,6 +11,7 @@ import org.json.simple.JSONObject;
 import com.igloosec.CacheManager;
 
 /**
+ * Araqne에 사용되는 공통 쿼리 메소드
  * @author JH
  *
  */
