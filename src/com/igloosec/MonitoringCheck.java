@@ -143,14 +143,14 @@ public class MonitoringCheck extends Module {
 				query = "SELECT table_name FROM (SELECT table_name, ROWNUM rn FROM user_tables WHERE table_name LIKE Upper('" + row[0] + "_%') ORDER BY table_name) WHERE rn <= " + drop_tables;
 				String[] tables = new DBHandler().getOneColumnData(super.DB_NAME, query);
 				for(String table_name : tables){
-					drop_table_list.add("drop table " + table_name);
+					drop_table_list.add("drop table " + table_name + " purge");
 				}
 			}
 			else if (!rule_list.containsKey(row[0].split("_")[2])){
 				query = "SELECT table_name, ROWNUM rn FROM user_tables WHERE table_name LIKE Upper('" + row[0] + "_%')";
 				String[] tables = new DBHandler().getOneColumnData(super.DB_NAME, query);
 				for(String table_name : tables){
-					drop_table_list.add("drop table " + table_name);
+					drop_table_list.add("drop table " + table_name + " purge");
 				}
 			}
 		}

@@ -7,6 +7,6 @@
 	<classpathentry kind="lib" path="lib/json_simple-1.1.jar"/>
 	<classpathentry kind="lib" path="lib/mybatis-3.1.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="lib/ojdbc6.jar"/>
-	<classpathentry kind="lib" path="lib/araqne-logdb-client-0.7.2-package.jar"/>
+	<classpathentry kind="lib" path="lib/araqne-logdb-client-0.7.3-package.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

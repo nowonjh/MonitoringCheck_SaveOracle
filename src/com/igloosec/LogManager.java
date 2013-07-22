@@ -25,8 +25,7 @@ public class LogManager{
 
 	private LogManager() {
 		File dir = new File(System.getProperty("is.home"), "/conf/link.log4j");
-		PropertyConfigurator.configure(dir.getAbsolutePath());
-		PropertyConfigurator.configureAndWatch(dir.getAbsolutePath(), 60000L);
+		PropertyConfigurator.configureAndWatch(dir.getAbsolutePath(), 1000L);
 	}
 
 	public static LogManager getInstance() {

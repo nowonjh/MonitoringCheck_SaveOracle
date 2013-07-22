@@ -25,6 +25,7 @@ import com.igloosec.common.CommonUtil;
  */
 public class DBConnectionManager {
 	Logger logger = LogManager.getInstance().getLogger("monitoringCheck.db");
+	
 	private static DBConnectionManager instance;
 	public static final String DB_1 = "monitoringCheck";
 	private Properties db1Props;
