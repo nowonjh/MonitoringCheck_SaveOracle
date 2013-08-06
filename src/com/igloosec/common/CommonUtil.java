@@ -98,8 +98,7 @@ public class CommonUtil {
 	public static JSONObject getResultFilter(Vector<Map<String, Object>> resultData, List<String> column_list) {
 		int total_cnt = 0;
 		List<Map<String, String>> list = new LinkedList<Map<String,String>>();
-		for(Iterator<Map<String, Object>> iter = resultData.iterator(); iter.hasNext();){
-			Map<String, Object> map = iter.next();
+		for(Map<String, Object> map : resultData){
 			
 			Map<String, String> row_map = new LinkedHashMap<String, String>();
 			for(int i = 0; i < column_list.size(); i++){

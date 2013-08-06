@@ -15,6 +15,8 @@ import org.apache.log4j.Logger;
 import org.araqne.logdb.client.LogCursor;
 import org.araqne.logdb.client.LogDbClient;
 import org.araqne.logdb.client.LogQuery;
+import org.araqne.logdb.client.MessageException;
+
 import com.igloosec.LogManager;
 
 /**
@@ -322,7 +324,6 @@ public class DBHandler {
 		LogDbClient client = DBConnectionManager.getInstance().getQueryClient(mgr_ip);
 		
 		try {
-			
 			int query_id = client.createQuery(exe_query);
 			client.startQuery(query_id);
 			LogQuery q = client.getQuery(query_id);
@@ -336,7 +337,7 @@ public class DBHandler {
 					loop = 0;
 				}
 
-				if (q.getStatus().equalsIgnoreCase("Ended")) {
+				if (q.getStatus().equalsIgnoreCase("Ended") || q.getStatus().equalsIgnoreCase("Cancelled")) {
 					long ended_data = q.getLoadedCount() - (pagesize * (page - 1));
 					
 					if (ended_data > pagesize) {
@@ -364,26 +365,27 @@ public class DBHandler {
 			logger.debug(exe_query);
 			client.stopQuery(query_id);
 			client.removeQuery(query_id);
+		} catch (MessageException e) {
+			logger.error(e.getMessage() + " : error query => " + exe_query, e);
 		} catch (IOException e) {
-			logger.error(e.getMessage(), e);
+			logger.error(e.getMessage() + " : error query => " + exe_query, e);
 		}
 	}
 	
 	
 	private boolean insert(String table_name, String db_name, Map<String, Object> rows, String fields, String id, String yyyyMMdd) {
-		
 		Connection con = DBConnectionManager.getInstance().getConnection(db_name);
 		PreparedStatement pstmt = null;
 		boolean flag = false;
-		
 		String values = "";
-		
 		fields = fields.replaceAll("^\\_id\\,", "");
 		
 		for(int i = 0; i < fields.split(",").length; i++){
 			values += "?,";
 		}
 		values = values.replaceAll("\\,$", "");
+		String[] fields_array = fields.split(",");
+		fields = fields.replaceFirst("line", "raw_event");
 		
 		try {
 			pstmt = con.prepareStatement("insert into " + table_name + "(id," + fields + ") values(?," + values + ")");
@@ -398,7 +400,7 @@ public class DBHandler {
 				pstmt.setString(1, id + "_" + yyyyMMdd + "_" + row.get("_id"));
 				
 				int index = 2;
-				for(String field : fields.split(",")){
+				for(String field : fields_array){
 					pstmt.setString(index++, getColumn(row.get(field.trim())));
 				}
 				try{
